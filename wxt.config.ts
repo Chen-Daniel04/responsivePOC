@@ -4,6 +4,6 @@ import { defineConfig } from 'wxt';
 export default defineConfig({
   modules: ['@wxt-dev/module-react'],
   manifest: {
-    permissions: ["debugger", "tabs"],
+    permissions: ["debugger", "windows", "tabs", "system.display"],
   },
 });
