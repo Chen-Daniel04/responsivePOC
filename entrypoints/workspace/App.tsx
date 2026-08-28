@@ -10,8 +10,8 @@ const DEVICES = {
     height: 1024,
   },
   Desktop: {
-    width: 1440,
-    height: 900,
+    width: 1920,
+    height: 1080,
   },
 };
 

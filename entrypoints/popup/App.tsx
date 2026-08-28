@@ -15,7 +15,8 @@ function App() {
   const setViewport = async (
     width: number,
     height: number,
-    orientation: "portraitPrimary" | "landscapePrimary"
+    orientation: "portraitPrimary" | "landscapePrimary",
+    deviceType: "phone" | "tablet" | "desktop"
   ) => {
     try {
       setStatus("Applying viewport...");
@@ -25,6 +26,7 @@ function App() {
         width,
         height,
         orientation,
+        deviceType,
       });
 
       if (!result?.success) {
@@ -81,6 +83,59 @@ function App() {
         }`
       );
     }
+  };
+
+  const captureFullPage = async () => {
+    try {
+      setStatus("Capturing full page...");
+
+      const result = await browser.runtime.sendMessage({
+        type: "CAPTURE_FULL_PAGE",
+      });
+
+      if (!result?.success) {
+        throw new Error(
+          result?.error || "Screenshot failed"
+        );
+      }
+
+      const link = document.createElement("a");
+
+      link.href = `data:image/png;base64,${result.data}`;
+
+      link.download = `responsive-full-page-${Date.now()}.png`;
+
+      link.click();
+
+      setStatus(
+        `✅ Full page exported (${result.width} × ${result.height})`
+      );
+    } catch (error) {
+      console.error("[POC] Screenshot error:", error);
+
+      setStatus(
+        `❌ ${
+          error instanceof Error
+            ? error.message
+            : "Screenshot failed"
+        }`
+      );
+    }
+  };
+
+  const openWorkspace = async () => {
+    const [tab] = await browser.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
+
+    const url = tab?.url ?? "";
+
+    await browser.tabs.create({
+      url: browser.runtime.getURL(
+        `/workspace.html${url ? `?url=${encodeURIComponent(url)}` : ""}`
+      ),
+    });
   };
 
   if (!device) {
@@ -164,28 +219,34 @@ function App() {
           marginBottom: 16,
         }}
       >
-        <button
-          onClick={() =>
-            setViewport(
-              device.width,
-              device.height,
-              "portraitPrimary"
-            )
-          }
-        >
-          Portrait
-        </button>
+        {device.type !== "desktop" && (
+          <button
+            onClick={() =>
+              setViewport(
+                device.width,
+                device.height,
+                "portraitPrimary",
+                device.type
+              )
+            }
+          >
+            Portrait
+          </button>
+        )}
 
         <button
           onClick={() =>
             setViewport(
               device.height,
               device.width,
-              "landscapePrimary"
+              "landscapePrimary",
+              device.type
             )
           }
         >
-          Landscape
+          {device.type === "desktop"
+            ? "Apply Viewport"
+            : "Landscape"}
         </button>
       </div>
 
@@ -199,6 +260,31 @@ function App() {
         }}
       >
         Capture Viewport
+      </button>
+
+      {/* Full Page Screenshot */}
+      <button
+        onClick={captureFullPage}
+        style={{
+          width: "100%",
+          padding: 8,
+          marginBottom: 16,
+        }}
+      >
+        Capture Full Page
+      </button>
+
+      {/* Workspace */}
+      <button
+        onClick={openWorkspace}
+        style={{
+          width: "100%",
+          padding: 8,
+          marginBottom: 16,
+          fontWeight: "bold",
+        }}
+      >
+        Open Responsive Workspace
       </button>
 
       {/* Status */}
